@@ -54,7 +54,6 @@ func RtmpUrlData(m *models.MFCModel) (rtmpConnData *RtmpConn) {
 type MfcRtmpHandler struct {
 	*flv.File
 	OutBountStreamChan chan rtmp.OutboundStream
-	LastReceived       int64
 }
 
 func (handler *MfcRtmpHandler) OnStatus(conn rtmp.OutboundConn) {}
@@ -67,6 +66,9 @@ func (handler *MfcRtmpHandler) OnReceived(conn rtmp.Conn, message *rtmp.Message)
 	msgAsString := message.Buf.String()
 	if strings.Contains(msgAsString, loginResultCMD) {
 		jsCode := jsRegexp.FindString(msgAsString)
+		jsCode = strings.Replace(jsCode, "!!screen.width", "1", 1)
+		jsCode = strings.Replace(jsCode, "!!screen.height", "1", 1)
+		jsCode = strings.Replace(jsCode, "!!document.location.host", "1", 1)
 		vm := goja.New()
 		v, err := vm.RunString(jsCode)
 		if err != nil {
@@ -95,13 +97,11 @@ func (handler *MfcRtmpHandler) OnReceived(conn rtmp.Conn, message *rtmp.Message)
 			handler.WriteVideoTag(message.Buf.Bytes(), message.AbsoluteTimestamp)
 		}
 		dataSize += int64(message.Buf.Len())
-		handler.LastReceived = time.Now().Unix()
 	case rtmp.AUDIO_TYPE:
 		if handler.File != nil {
 			handler.WriteAudioTag(message.Buf.Bytes(), message.AbsoluteTimestamp)
 		}
 		dataSize += int64(message.Buf.Len())
-		handler.LastReceived = time.Now().Unix()
 	}
 }
 
@@ -128,7 +128,6 @@ func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsTo
 	mfcHandler := &MfcRtmpHandler{
 		File:flv,
 		OutBountStreamChan: createStreamChan,
-		LastReceived: 0,
 	}
 	obConn, err := rtmp.Dial(serverUrl, mfcHandler, 100)
 	if err != nil {
@@ -153,17 +152,22 @@ func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsTo
 	case <-time.After(chanReadyTimeout):
 		return errors.New("create stream timeout")
 	}
+	lastGet := int64(0)
+	dataReceiveTicker := time.NewTicker(dataReceiveTimeout)
+	everySecond := time.NewTicker(time.Second)
 	for {
 		select {
 		case <- streamCloseChan:
 			fmt.Println("\nStream closed")
 			return
-		case <- time.After(1 * time.Second):
-			fmt.Printf("\rFile size: %.2f MB", float32(dataSize)/1024/1024)
-			if mfcHandler.LastReceived != 0 && time.Duration(time.Now().Unix() - mfcHandler.LastReceived) * time.Second > dataReceiveTimeout {
+		case <- dataReceiveTicker.C:
+			if lastGet == dataSize {
 				fmt.Println("\nNo data anymore, stream close")
 				return
 			}
+			lastGet = dataSize
+		case <- everySecond.C:
+			fmt.Printf("\rFile size: %.2f MB (%d)", float32(dataSize)/1024/1024, dataSize)
 		}
 	}
 }

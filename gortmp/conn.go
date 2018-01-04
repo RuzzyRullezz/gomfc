@@ -14,6 +14,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"strings"
 )
 
 // Conns
@@ -657,6 +658,10 @@ func (conn *conn) received(message *Message) {
 					}
 					fallthrough
 				case COMMAND_AMF0:
+					if strings.Contains(message.Buf.String(), "loginResult") {
+						conn.handler.OnReceived(conn, message)
+						return
+					}
 					cmd.Name, err = amf.ReadString(message.Buf)
 					if err != nil {
 						logger.ModulePrintln(logHandler, log.LOG_LEVEL_WARNING,
