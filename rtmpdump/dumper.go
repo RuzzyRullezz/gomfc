@@ -21,7 +21,8 @@ import (
 const gType = "DOWNLOAD"
 const rtmpPattern = "rtmp://video%d.myfreecams.com:1935/NxServer"
 const playpathPattern = "mp4:mfc_%d.f4v"
-const serverOffser = -500
+const serverOffset = -500
+const serverOffsetPure = -34
 const roomOffset = 100000000
 const loginResultCMD = "loginResult"
 const challengeResultToken = 120781448
@@ -42,8 +43,14 @@ type RtmpConn struct {
 }
 
 func RtmpUrlData(m *models.MFCModel) (rtmpConnData *RtmpConn) {
+	var serverId int32
+	if m.U.Camserv + serverOffset > 0 {
+		serverId = m.U.Camserv + serverOffset
+	} else {
+		serverId = m.U.Camserv + serverOffsetPure
+	}
 	rtmpConnData = &RtmpConn{
-		ServerUrl: fmt.Sprintf(rtmpPattern, m.U.Camserv + serverOffser),
+		ServerUrl: fmt.Sprintf(rtmpPattern, serverId),
 		SessionId: m.Sid,
 		ModelId: m.Uid,
 		RoomId: m.Uid + roomOffset,
@@ -128,6 +135,7 @@ func waitForCreateStreamReady(timeout time.Duration) (err error) {
 }
 
 func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsToken string, flv *flv.File) (err error){
+	fmt.Println(serverUrl)
 	createStreamChan := make(chan rtmp.OutboundStream)
 	mfcHandler := &MfcRtmpHandler{
 		File:flv,
