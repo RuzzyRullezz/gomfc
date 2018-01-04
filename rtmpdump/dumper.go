@@ -73,9 +73,10 @@ func (handler *MfcRtmpHandler) OnClosed(conn rtmp.Conn) {
 func (handler *MfcRtmpHandler) OnReceived(conn rtmp.Conn, message *rtmp.Message) {
 	msgAsString := message.Buf.String()
 	if strings.Contains(msgAsString, loginResultCMD) {
-		fmt.Println(message.Buf.Bytes()[14:23])
 		num, err := amf.ReadDouble(bytes.NewReader(message.Buf.Bytes()[14:23]))
-		fmt.Println(num)
+		if err != nil {
+			log.Fatal(err)
+		}
 		jsCode := jsRegexp.FindString(msgAsString)
 		jsCode = strings.Replace(jsCode, "!!screen.width", "1", 1)
 		jsCode = strings.Replace(jsCode, "!!screen.height", "1", 1)
