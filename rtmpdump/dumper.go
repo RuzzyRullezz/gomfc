@@ -15,6 +15,7 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/zhangpeihao/goflv"
+	"github.com/zhangpeihao/goamf"
 )
 
 const gType = "DOWNLOAD"
@@ -65,6 +66,9 @@ func (handler *MfcRtmpHandler) OnClosed(conn rtmp.Conn) {
 func (handler *MfcRtmpHandler) OnReceived(conn rtmp.Conn, message *rtmp.Message) {
 	msgAsString := message.Buf.String()
 	if strings.Contains(msgAsString, loginResultCMD) {
+		fmt.Println(message.Buf.Bytes()[14:23])
+		num, err := amf.ReadDouble(bytes.NewReader(message.Buf.Bytes()[14:23]))
+		fmt.Println(num)
 		jsCode := jsRegexp.FindString(msgAsString)
 		jsCode = strings.Replace(jsCode, "!!screen.width", "1", 1)
 		jsCode = strings.Replace(jsCode, "!!screen.height", "1", 1)
@@ -80,7 +84,7 @@ func (handler *MfcRtmpHandler) OnReceived(conn rtmp.Conn, message *rtmp.Message)
 		cmd := &rtmp.Command{
 			IsFlex:        false,
 			Name:          "_result",
-			TransactionID: challengeResultToken,
+			TransactionID: uint32(num),
 			Objects: []interface{}{nil, challengeResult},
 		}
 		err = cmd.Write(buf)
