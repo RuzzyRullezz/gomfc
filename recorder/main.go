@@ -8,9 +8,9 @@ import (
 	"strings"
 	"path/filepath"
 
-	"go_private/ws_client"
-	"go_private/models"
-	"go_private/rtmpdump"
+	"gomfc/ws_client"
+	"gomfc/models"
+	"gomfc/rtmpdump"
 
 	"github.com/zhangpeihao/goflv"
 )

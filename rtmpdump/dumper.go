@@ -10,10 +10,10 @@ import (
 	"time"
 	"errors"
 
-	rtmp "go_private/gortmp"
-	"github.com/dop251/goja"
+	rtmp "gomfc/gortmp"
+	"gomfc/models"
 
-	"go_private/models"
+	"github.com/dop251/goja"
 	"github.com/zhangpeihao/goflv"
 )
 
