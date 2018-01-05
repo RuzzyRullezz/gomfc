@@ -8,7 +8,7 @@ import (
 
 const (
 	IsOnline  uint64 = 0
-	IsTop     uint64 = 90
+	Except    uint64 = 90
 	IsOff     uint64 = 127
 	IsAway    uint64 = 2
 	IsPrivate uint64 = 12
@@ -17,7 +17,7 @@ const (
 
 var StatusVerbose = map[uint64]string{
 	IsOnline:  "online",
-	IsTop:     "online",
+	Except:    "off (vs=90)",
 	IsOff:     "off",
 	IsAway:    "away",
 	IsPrivate: "in private",
@@ -53,7 +53,7 @@ func (m *MFCModel) SetStatus() {
 }
 
 func (m *MFCModel) RecordEnable() bool {
-	return m.Vs == IsOnline || m.Vs == IsTop
+	return m.Vs == IsOnline
 }
 
 func GetModelData(raw string) (mfcmodel MFCModel, err error) {
