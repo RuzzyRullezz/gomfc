@@ -84,7 +84,7 @@ func getXChatServer() (xchat string, err error) {
 	if err != nil {
 		return
 	}
-	xchat = cfgResp.Chat_Servers[rand.Intn(len(cfgResp.Chat_Servers)-1)]
+	xchat = cfgResp.Chat_Servers[0]
 	return
 }
 
