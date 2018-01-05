@@ -87,6 +87,26 @@ func getXChatServer() (xchat string, err error) {
 	return
 }
 
+func GetNgServer() (ngserver int32, err error) {
+	type NgResp struct {
+		NgVideo_Servers map[int32]string
+	}
+	resp, err := http.Get(serverCfgUrl)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	ngResp := NgResp{}
+	err = json.Unmarshal(body, &ngResp)
+	if err != nil {
+		return
+	}
+	for ngserver = range ngResp.NgVideo_Servers {
+	}
+	return
+}
+
 func (c *WSConnector) GetTokenId() string {
 	return c.tokenId
 }
@@ -139,7 +159,7 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 	}{
 		Err:   0,
 		Start: time.Now().UnixNano() / int64(time.Millisecond),
-		Stop:  time.Now().UnixNano()/int64(time.Millisecond) + intervalLen,
+		Stop:  time.Now().UnixNano() / int64(time.Millisecond) + intervalLen,
 		A:     0,
 		Time:  timeR,
 		Key:   key,

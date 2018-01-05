@@ -7,21 +7,21 @@ import (
 )
 
 const (
-	IsOnline uint64 = 0
-	IsOnline2 uint64 = 90
-	IsOff uint64 = 127
-	IsAway uint64 = 2
+	IsOnline  uint64 = 0
+	IsTop     uint64 = 90
+	IsOff     uint64 = 127
+	IsAway    uint64 = 2
 	IsPrivate uint64 = 12
-	IsGroup uint64= 13
+	IsGroup   uint64 = 13
 )
 
 var StatusVerbose = map[uint64]string{
-	IsOnline: "online",
-	IsOnline2: "online",
-	IsOff: "off",
-	IsAway: "away",
+	IsOnline:  "online",
+	IsTop:     "online",
+	IsOff:     "off",
+	IsAway:    "away",
 	IsPrivate: "in private",
-	IsGroup: "in group show",
+	IsGroup:   "in group show",
 }
 
 type MFCModel struct {
@@ -53,7 +53,7 @@ func (m *MFCModel) SetStatus() {
 }
 
 func (m *MFCModel) RecordEnable() bool {
-	return m.Vs == IsOnline || m.Vs == IsOnline2
+	return m.Vs == IsOnline || m.Vs == IsTop
 }
 
 func GetModelData(raw string) (mfcmodel MFCModel, err error) {

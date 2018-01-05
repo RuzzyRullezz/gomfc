@@ -83,6 +83,13 @@ func main() {
 	}
 	wsToken := wsConn.GetTokenId()
 	model, err := models.GetModelData(modelRaw)
+	if model.Vs == models.IsTop {
+		ngserverId, err := ws_client.GetNgServer()
+		if err != nil {
+			panic(err)
+		}
+		model.U.Camserv = ngserverId
+	}
 	if !model.Exists {
 		fmt.Println(fmt.Errorf("%q does not exist", modelName))
 		return

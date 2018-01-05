@@ -23,7 +23,6 @@ const rtmpPattern = "rtmp://video%d.myfreecams.com:1935/NxServer"
 const playpathPattern = "mp4:mfc_%d.f4v"
 const serverOffset = -500
 const serverOffsetPure = -34
-const defaultServerId int32 = 734
 const roomOffset = 100000000
 const loginResultCMD = "loginResult"
 const chanReadyTimeout = 60 * time.Second
@@ -48,9 +47,6 @@ func RtmpUrlData(m *models.MFCModel) (rtmpConnData *RtmpConn) {
 		serverId = m.U.Camserv + serverOffset
 	} else {
 		serverId = m.U.Camserv + serverOffsetPure
-	}
-	if serverId <= 0 {
-		serverId = defaultServerId
 	}
 	rtmpConnData = &RtmpConn{
 		ServerUrl: fmt.Sprintf(rtmpPattern, serverId),
