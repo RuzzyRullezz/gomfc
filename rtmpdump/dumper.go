@@ -24,6 +24,8 @@ const playpathPattern = "mp4:mfc_%d.f4v"
 const playpathPatternPure = "mfc_%d"
 const serverOffset = -500
 const serverOffsetPure = -34
+const defaultServerId int32 = 734
+const defaultPattern = playpathPattern
 const roomOffset = 100000000
 const loginResultCMD = "loginResult"
 const chanReadyTimeout = 60 * time.Second
@@ -51,6 +53,10 @@ func RtmpUrlData(m *models.MFCModel) (rtmpConnData *RtmpConn) {
 	} else {
 		serverId = m.U.Camserv + serverOffsetPure
 		playPath = playpathPatternPure
+	}
+	if serverId <= 0 {
+		serverId = defaultServerId
+		playPath = defaultPattern
 	}
 	rtmpConnData = &RtmpConn{
 		ServerUrl: fmt.Sprintf(rtmpPattern, serverId),
