@@ -28,6 +28,7 @@ const intervalLen = 600
 const sessionPosition  = 5
 const tokenPosition = 2
 const wsPingTimeout = 10 * time.Second
+const maxTries = 3
 
 type ApiChallengeResult struct {
 	Id string
@@ -127,6 +128,13 @@ func (c *WSConnector) Close() error {
 }
 
 func CreateConnection(modelName string) (ws WSConnector, err error) {
+	var tries = 0
+	Start:
+	tries++
+	if tries > maxTries {
+		err = errors.New("websocket error, try again")
+		return
+	}
 	ws.modelName = modelName
 	challengeResult, err := GetApiChallengeResult()
 	if err != nil {
@@ -187,12 +195,18 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 		return
 	}
 	splited = strings.Fields(respMsg)
+	if len(splited) < tokenPosition {
+		goto Start
+	}
 	ws.tokenId = splited[tokenPosition]
 	err = websocket.Message.Receive(ws.Conn, &respMsg)
 	if err != nil {
 		return
 	}
 	splited = strings.Fields(respMsg)
+	if len(splited) < sessionPosition {
+		goto Start
+	}
 	ws.sessionId = splited[sessionPosition]
 	if err = ws.SendString(fmt.Sprintf("1 0 0 20071025 0 %s@1/guest:guest\n", ws.sessionId)); err != nil {
 		return
@@ -260,7 +274,7 @@ func (c *WSConnector) Serve() {
 	}
 }
 
-func (c *WSConnector) WaitData(timeout time.Duration) (result string, err error) {
+func (c *WSConnector) 	WaitData(timeout time.Duration) (result string, err error) {
 	ServeLoop:
 	for {
 		select {
