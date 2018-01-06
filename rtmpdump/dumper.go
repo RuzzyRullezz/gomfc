@@ -21,6 +21,7 @@ import (
 const gType = "DOWNLOAD"
 const rtmpPattern = "rtmp://video%d.myfreecams.com:1935/NxServer"
 const playpathPattern = "mp4:mfc_%d.f4v"
+const playpathPatternPure = "mfc_%d"
 const serverOffset = -500
 const serverOffsetPure = -34
 const roomOffset = 100000000
@@ -43,17 +44,23 @@ type RtmpConn struct {
 
 func RtmpUrlData(m *models.MFCModel) (rtmpConnData *RtmpConn) {
 	var serverId int32
+	var playPath string
 	if m.U.Camserv + serverOffset > 0 {
 		serverId = m.U.Camserv + serverOffset
 	} else {
 		serverId = m.U.Camserv + serverOffsetPure
+	}
+	if m.IsHD() {
+		playPath = playpathPattern
+	} else {
+		playPath = playpathPatternPure
 	}
 	rtmpConnData = &RtmpConn{
 		ServerUrl: fmt.Sprintf(rtmpPattern, serverId),
 		SessionId: m.Sid,
 		ModelId: m.Uid,
 		RoomId: m.Uid + roomOffset,
-		Playpath: fmt.Sprintf(playpathPattern, m.Uid + roomOffset,),
+		Playpath: fmt.Sprintf(playPath, m.Uid + roomOffset,),
 	}
 	return
 }
@@ -160,12 +167,6 @@ func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsTo
 	select {
 	case stream := <-createStreamChan:
 		stream.Play(playPath, nil, nil, nil)
-		select {
-		case <- time.After(dataReceiveTimeout/2):
-			if dataSize == 0 {
-				stream.Play(strings.Replace(strings.Replace(playPath, "mp4:", "", 1), ".f4v", "", 1), nil, nil, nil)
-			}
-		}
 	case <-time.After(chanReadyTimeout):
 		return errors.New("create stream timeout")
 	}

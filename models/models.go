@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 )
 
+const HDFlag int32 = 1024
+
 const (
 	IsOnline  uint64 = 0
 	Except    uint64 = 90
@@ -34,6 +36,9 @@ type MFCModel struct {
 	U struct{
 		Camserv int32
 	}
+	M struct{
+		Flags int32
+	}
 	Exists bool
 	Status string
 }
@@ -54,6 +59,10 @@ func (m *MFCModel) SetStatus() {
 
 func (m *MFCModel) RecordEnable() bool {
 	return m.Vs == IsOnline
+}
+
+func (m *MFCModel) IsHD() bool {
+	return m.M.Flags & HDFlag != 0
 }
 
 func GetModelData(raw string) (mfcmodel MFCModel, err error) {

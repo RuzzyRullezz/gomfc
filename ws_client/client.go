@@ -88,26 +88,6 @@ func getXChatServer() (xchat string, err error) {
 	return
 }
 
-func GetNgServer() (ngserver int32, err error) {
-	type NgResp struct {
-		NgVideo_Servers map[int32]string
-	}
-	resp, err := http.Get(serverCfgUrl)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	ngResp := NgResp{}
-	err = json.Unmarshal(body, &ngResp)
-	if err != nil {
-		return
-	}
-	for ngserver = range ngResp.NgVideo_Servers {
-	}
-	return
-}
-
 func (c *WSConnector) GetTokenId() string {
 	return c.tokenId
 }
