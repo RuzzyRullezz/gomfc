@@ -175,7 +175,7 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 		return
 	}
 	splited = strings.Fields(respMsg)
-	if len(splited) < tokenPosition {
+	if len(splited) != 5 {
 		goto Start
 	}
 	ws.tokenId = splited[tokenPosition]
@@ -184,7 +184,7 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 		return
 	}
 	splited = strings.Fields(respMsg)
-	if len(splited) < sessionPosition {
+	if len(splited) != 6 {
 		goto Start
 	}
 	ws.sessionId = splited[sessionPosition]

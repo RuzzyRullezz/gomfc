@@ -13,6 +13,7 @@ import (
 	"gomfc/rtmpdump"
 
 	"github.com/zhangpeihao/goflv"
+	"github.com/go-errors/errors"
 )
 const waitTimeout = 5 * time.Second
 const folder = "streams"
@@ -41,6 +42,7 @@ func exitProgram(waitEnter bool) {
 		exitCode = -1
 		e, _ := r.(error)
 		fmt.Println("Error:", e)
+		fmt.Println(errors.Wrap(e, 2).ErrorStack())
 	}
 	if waitEnter {
 		fmt.Print("Press enter to continue... ")

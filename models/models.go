@@ -50,7 +50,7 @@ func (m *MFCModel) SetStatus() {
 	}
 	verbose, ok := StatusVerbose[m.Vs]
 	if !ok {
-		m.Status = "unknowm status"
+		m.Status = "unknown status"
 		return
 	}
 	m.Status = verbose
