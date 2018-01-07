@@ -69,9 +69,9 @@ type WSConnector struct {
 	trace string
 }
 
-func getXChatServer() (xchat string, err error) {
+func getWSServer() (server string, err error) {
 	type CfgResp struct {
-		Chat_Servers []string
+		Websocket_Servers map[string]string
 	}
 	resp, err := http.Get(serverCfgUrl)
 	if err != nil {
@@ -84,7 +84,10 @@ func getXChatServer() (xchat string, err error) {
 	if err != nil {
 		return
 	}
-	xchat = cfgResp.Chat_Servers[0]
+	for server, _ = range cfgResp.Websocket_Servers {
+		return
+	}
+	err = errors.New("no ws servers")
 	return
 }
 
@@ -121,7 +124,7 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 		return
 	}
 	cid, key, timeR := challengeResult.Result.Cid, challengeResult.Result.Key, challengeResult.Result.Time
-	xchat, err := getXChatServer()
+	xchat, err := getWSServer()
 	if err != nil {
 		return
 	}
