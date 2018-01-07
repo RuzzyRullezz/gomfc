@@ -16,7 +16,6 @@ import (
 	"encoding/json"
 
 	"strings"
-	"strconv"
 	"errors"
 )
 
@@ -29,6 +28,7 @@ const sessionPosition  = 5
 const tokenPosition = 2
 const wsPingTimeout = 10 * time.Second
 const maxTries = 3
+const modelDataTimeOut = 30 * time.Second
 
 type ApiChallengeResult struct {
 	Id string
@@ -236,25 +236,30 @@ func (c *WSConnector) Serve() {
 			}
 		}
 	}()
-	found := false
+	var found string
+	waitTimer := time.NewTimer(modelDataTimeOut)
 	for {
 		select {
 		case <-c.stop:
 			return
+		case <-waitTimer.C:
+			c.result <- found
 		default:
 			err = websocket.Message.Receive(c.Conn, &respMsg)
 			if err != nil {
 				return
 			}
-			if !found && strings.Contains(respMsg, strconv.FormatInt(c.modelRequestId, 10)) {
-				found = true
-				c.result <- respMsg
+			if strings.Contains(respMsg, c.modelName) {
+				found = respMsg
+				if !strings.Contains(respMsg, "%22vs%22:90") {
+					c.result <- found
+				}
 			}
 		}
 	}
 }
 
-func (c *WSConnector) 	WaitData(timeout time.Duration) (result string, err error) {
+func (c *WSConnector) WaitData(timeout time.Duration) (result string, err error) {
 	ServeLoop:
 	for {
 		select {

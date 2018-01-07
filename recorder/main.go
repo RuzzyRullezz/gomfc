@@ -15,7 +15,7 @@ import (
 	"github.com/zhangpeihao/goflv"
 	"github.com/go-errors/errors"
 )
-const waitTimeout = 5 * time.Second
+const waitTimeout = 60 * time.Second
 const folder = "streams"
 
 var parentDir string
