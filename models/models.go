@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"fmt"
 )
 
 const HDFlag int32 = 1024
@@ -72,7 +73,6 @@ func (m *MFCModel) IsHD() bool {
 
 func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	defer func() {
-		mfcmodel.Exists = mfcmodel.Nm != ""
 		mfcmodel.SetStatus()
 	}()
 	var result string
@@ -84,8 +84,15 @@ func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	serviceCodes := msgPattern.FindString(result)
 	result = strings.Replace(result, serviceCodes, "", -1)
 	if err = json.Unmarshal([]byte(result), &mfcmodel); err != nil {
+		if !strings.Contains(result, "Guest") {
+			mfcmodel.Nm = result
+			err = nil
+			fmt.Println(mfcmodel.Nm)
+			return
+		}
 		err = ServiceInfoError
 		return
 	}
+	mfcmodel.Exists = true
     return
 }

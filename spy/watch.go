@@ -61,7 +61,7 @@ Loop:
 				break Loop
 			}
 			if state.Nm == modelName {
-				fmt.Println(state)
+
 			}
 		}
 	}
