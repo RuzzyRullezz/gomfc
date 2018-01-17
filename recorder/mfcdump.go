@@ -75,7 +75,7 @@ func main() {
 			panic(err)
 		}
 	}
-	wsConn, err := ws_client.CreateConnection(modelName)
+	wsConn, err := ws_client.CreateConnection(modelName, false)
 	if err != nil {
 		panic(err)
 	}

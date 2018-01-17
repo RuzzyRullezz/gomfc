@@ -66,7 +66,6 @@ type WSConnector struct {
 	tokenId        string
 	sessionId      string
 	modelRequestId int64
-	allFlag        bool
 	msgHandler     WSMsgHandler
 
 	err   error
@@ -118,17 +117,7 @@ func (c *WSConnector) SetMsgHdlr(handler WSMsgHandler) {
 	c.msgHandler = handler
 }
 
-func (c *WSConnector) setAll() {
-	c.allFlag = true
-}
-
-func (c *WSConnector) setSingle() {
-	c.allFlag = false
-}
-
-
-
-func CreateConnection(modelName string) (ws WSConnector, err error) {
+func CreateConnection(modelName string, allFlag bool) (ws WSConnector, err error) {
 	var tries = 0
 	Start:
 	tries++
@@ -212,26 +201,22 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 	if err = ws.SendString(fmt.Sprintf("1 0 0 20071025 0 %s@1/guest:guest\n", ws.sessionId)); err != nil {
 		return
 	}
-	if ws.modelName != "" {
-		ws.setSingle()
-		ws.modelRequestId = time.Now().UnixNano() / 1000000000
-		modelRequest := fmt.Sprintf("10 %s 0 %d 0 %s\n", ws.tokenId, ws.modelRequestId, ws.modelName)
-		err = ws.SendString(modelRequest)
-		if err != nil {
-			return
-		}
-		err = ws.SendString(fmt.Sprintf("44 %s 0 1 0\n", ws.tokenId))
-		if err != nil {
-			return
-		}
-	} else {
-		ws.setAll()
+	ws.modelRequestId = time.Now().UnixNano() / 1000000000
+	modelRequest := fmt.Sprintf("10 %s 0 %d 0 %s\n", ws.tokenId, ws.modelRequestId, ws.modelName)
+	err = ws.SendString(modelRequest)
+	if err != nil {
+		return
 	}
-	go ws.Serve()
+	err = ws.SendString(fmt.Sprintf("44 %s 0 1 0\n", ws.tokenId))
+	if err != nil {
+		return
+
+	}
+	go ws.Serve(allFlag)
 	return
 }
 
-func (c *WSConnector) Serve() {
+func (c *WSConnector) Serve(allFlag bool) {
 	var respMsg string
 	var err error
 	defer func() {
@@ -261,7 +246,7 @@ func (c *WSConnector) Serve() {
 		}
 	}()
 
-	if c.allFlag {
+	if allFlag {
 		for {
 			select {
 			case <-c.stop:
@@ -320,7 +305,7 @@ ServeLoop:
 	return
 }
 
-func (c *WSConnector) ReadAll() (err error) {
+func (c *WSConnector) ReadForever() (err error) {
 ServerLoop:
 	for {
 		select {

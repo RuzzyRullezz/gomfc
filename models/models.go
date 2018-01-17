@@ -5,9 +5,11 @@ import (
 	"net/url"
 	"encoding/json"
 	"errors"
+	"strings"
 )
 
 const HDFlag int32 = 1024
+const ModelLv = 4
 
 const (
 	IsOnline  uint64 = 0
@@ -20,14 +22,14 @@ const (
 
 var StatusVerbose = map[uint64]string{
 	IsOnline:  "online",
-	Except:    "off (vs=90)",
+	Except:    "off", // vs = 90
 	IsOff:     "off",
 	IsAway:    "away",
 	IsPrivate: "in private",
 	IsGroup:   "in group show",
 }
 
-var NotFoundError = errors.New("Can't find model")
+var ServiceInfoError = errors.New("Get service information")
 
 type MFCModel struct {
 	Lv int
@@ -70,6 +72,7 @@ func (m *MFCModel) IsHD() bool {
 
 func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	defer func() {
+		mfcmodel.Exists = mfcmodel.Nm != ""
 		mfcmodel.SetStatus()
 	}()
 	var result string
@@ -77,13 +80,12 @@ func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	if err != nil {
 		return
 	}
-	pattern := regexp.MustCompile(`\{.*\}`)
-    result = pattern.FindString(result)
+	msgPattern := regexp.MustCompile(`\d+\s\d+\s\d+\s\d+\s\d+\s`)
+	serviceCodes := msgPattern.FindString(result)
+	result = strings.Replace(result, serviceCodes, "", -1)
 	if err = json.Unmarshal([]byte(result), &mfcmodel); err != nil {
-		mfcmodel.Exists = false
-		err = NotFoundError
+		err = ServiceInfoError
 		return
 	}
-	mfcmodel.Exists = true
     return
 }
