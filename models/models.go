@@ -70,7 +70,6 @@ func (m *MFCModel) IsHD() bool {
 
 func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	defer func() {
-		mfcmodel.Exists = mfcmodel.Nm != ""
 		mfcmodel.SetStatus()
 	}()
 	var result string
@@ -81,6 +80,7 @@ func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	pattern := regexp.MustCompile(`\{.*\}`)
     result = pattern.FindString(result)
 	if err = json.Unmarshal([]byte(result), &mfcmodel); err != nil {
+		mfcmodel.Exists = false
 		err = NotFoundError
 		return
 	}
