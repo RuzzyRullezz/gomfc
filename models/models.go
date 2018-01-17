@@ -84,5 +84,6 @@ func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 		err = NotFoundError
 		return
 	}
+	mfcmodel.Exists = true
     return
 }

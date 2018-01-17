@@ -79,7 +79,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	modelRaw, err := wsConn.WaitData(waitTimeout)
+	modelRaw, err := wsConn.ReadSingle(waitTimeout)
 	if err != nil {
 		panic(err)
 	}

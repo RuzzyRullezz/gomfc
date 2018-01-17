@@ -55,6 +55,8 @@ func GetApiChallengeResult() (apiChallengResponse *ApiChallengeResult, err error
 	return
 }
 
+type WSMsgHandler func(string) error
+
 type WSConnector struct {
 	modelName      string
 	sync.Mutex
@@ -64,6 +66,8 @@ type WSConnector struct {
 	tokenId        string
 	sessionId      string
 	modelRequestId int64
+	allFlag        bool
+	msgHandler     WSMsgHandler
 
 	err   error
 	trace string
@@ -109,6 +113,20 @@ func (c *WSConnector) Close() error {
 	close(c.stop)
 	return c.Conn.Close()
 }
+
+func (c *WSConnector) SetMsgHdlr(handler WSMsgHandler) {
+	c.msgHandler = handler
+}
+
+func (c *WSConnector) setAll() {
+	c.allFlag = true
+}
+
+func (c *WSConnector) setSingle() {
+	c.allFlag = false
+}
+
+
 
 func CreateConnection(modelName string) (ws WSConnector, err error) {
 	var tries = 0
@@ -195,6 +213,7 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 		return
 	}
 	if ws.modelName != "" {
+		ws.setSingle()
 		ws.modelRequestId = time.Now().UnixNano() / 1000000000
 		modelRequest := fmt.Sprintf("10 %s 0 %d 0 %s\n", ws.tokenId, ws.modelRequestId, ws.modelName)
 		err = ws.SendString(modelRequest)
@@ -205,6 +224,8 @@ func CreateConnection(modelName string) (ws WSConnector, err error) {
 		if err != nil {
 			return
 		}
+	} else {
+		ws.setAll()
 	}
 	go ws.Serve()
 	return
@@ -239,31 +260,47 @@ func (c *WSConnector) Serve() {
 			}
 		}
 	}()
-	var found string
-	waitTimer := time.NewTimer(modelDataTimeOut)
-	for {
-		select {
-		case <-c.stop:
-			return
-		case <-waitTimer.C:
-			c.result <- found
-		default:
-			err = websocket.Message.Receive(c.Conn, &respMsg)
-			if err != nil {
+
+	if c.allFlag {
+		for {
+			select {
+			case <-c.stop:
 				return
+			default:
+				err = websocket.Message.Receive(c.Conn, &respMsg)
+				if err != nil {
+					return
+				}
+				c.result <- respMsg
 			}
-			if strings.Contains(respMsg, c.modelName) {
-				found = respMsg
-				if !strings.Contains(respMsg, "%22vs%22:90") {
-					c.result <- found
+		}
+	} else {
+		var found string
+		waitTimer := time.NewTimer(modelDataTimeOut)
+		for {
+			select {
+			case <-c.stop:
+				return
+			case <-waitTimer.C:
+				c.result <- found
+			default:
+				err = websocket.Message.Receive(c.Conn, &respMsg)
+				if err != nil {
+					return
+				}
+				if strings.Contains(respMsg, c.modelName) {
+					found = respMsg
+					if !strings.Contains(respMsg, "%22vs%22:90") {
+						c.result <- found
+					}
 				}
 			}
 		}
 	}
 }
 
-func (c *WSConnector) WaitData(timeout time.Duration) (result string, err error) {
-	ServeLoop:
+func (c *WSConnector) ReadSingle(timeout time.Duration) (result string, err error) {
+ServeLoop:
 	for {
 		select {
 		case msg, ok := <-c.result:
@@ -278,6 +315,26 @@ func (c *WSConnector) WaitData(timeout time.Duration) (result string, err error)
 		case <-time.After(timeout):
 			err = errors.New("response timeout")
 			break ServeLoop
+		}
+	}
+	return
+}
+
+func (c *WSConnector) ReadAll() (err error) {
+ServerLoop:
+	for {
+		select {
+		case msg, ok := <-c.result:
+			if !ok {
+				if c.err != nil {
+					err = c.err
+				}
+			} else {
+				err = c.msgHandler(msg)
+				if err != nil {
+					break ServerLoop
+				}
+			}
 		}
 	}
 	return

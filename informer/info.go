@@ -22,7 +22,7 @@ func getModelUid(modelName string) (uid uint64, err error) {
 	if err != nil {
 		return
 	}
-	modelRaw, err := wsConn.WaitData(waitTimeout)
+	modelRaw, err := wsConn.ReadSingle(waitTimeout)
 	if err != nil {
 		return
 	}
