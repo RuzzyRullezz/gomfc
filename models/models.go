@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"net/url"
 	"encoding/json"
+	"errors"
 )
 
 const HDFlag int32 = 1024
@@ -25,6 +26,8 @@ var StatusVerbose = map[uint64]string{
 	IsPrivate: "in private",
 	IsGroup:   "in group show",
 }
+
+var NotFoundError = errors.New("Can't find model")
 
 type MFCModel struct {
 	Lv int
@@ -78,6 +81,7 @@ func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	pattern := regexp.MustCompile(`\{.*\}`)
     result = pattern.FindString(result)
 	if err = json.Unmarshal([]byte(result), &mfcmodel); err != nil {
+		err = NotFoundError
 		return
 	}
     return
