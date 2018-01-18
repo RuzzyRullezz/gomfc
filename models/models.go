@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-	"fmt"
 )
 
 const HDFlag int32 = 1024
@@ -31,6 +30,7 @@ var StatusVerbose = map[uint64]string{
 }
 
 var ServiceInfoError = errors.New("Get service information")
+var NotFoundError = errors.New("Not found")
 
 type MFCModel struct {
 	Lv int
@@ -80,19 +80,36 @@ func GetModelData(raw string) (mfcmodel MFCModel, err error) {
 	if err != nil {
 		return
 	}
-	msgPattern := regexp.MustCompile(`\d+\s\d+\s\d+\s\d+\s\d+\s`)
-	serviceCodes := msgPattern.FindString(result)
-	result = strings.Replace(result, serviceCodes, "", -1)
-	if err = json.Unmarshal([]byte(result), &mfcmodel); err != nil {
-		if !strings.Contains(result, "Guest") {
+	notFoundCase := regexp.MustCompile(`^\d+\s\d+\s\d+\s\d+\s\d+\s(\w+)$`)
+	notFoundMatch := notFoundCase.FindStringSubmatch(result)
+	if len(notFoundMatch) == 2 {
+		result = notFoundMatch[1]
+		if strings.Contains(result, "Guest") {
+			err = ServiceInfoError
+		} else {
+			err = NotFoundError
 			mfcmodel.Nm = result
-			err = nil
-			fmt.Println(mfcmodel.Nm)
+			mfcmodel.Exists = false
+		}
+		return
+	}
+	CaseOne := regexp.MustCompile(`^\d+\s\d+\s\d+\s\d+\s\d+\s(\{.+\})$`)
+	CaseTwo := regexp.MustCompile(`^\d+\s\d+\s\d+\s\d+\s\d+\s(\{.+\})\d+\s\d+\s\d+\s\d+\s\d+\s(\{.+\})$`)
+	jsonStrings := CaseOne.FindStringSubmatch(result)
+	if len(jsonStrings) <= 1 {
+		jsonStrings = CaseTwo.FindStringSubmatch(result)
+		if len(jsonStrings) <= 1 {
+			err = ServiceInfoError
 			return
 		}
+	}
+	result = jsonStrings[1]
+	if err = json.Unmarshal([]byte(result), &mfcmodel); err != nil {
 		err = ServiceInfoError
 		return
 	}
-	mfcmodel.Exists = true
+	if mfcmodel.Nm != "" {
+		mfcmodel.Exists = true
+	}
     return
 }

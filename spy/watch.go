@@ -144,7 +144,12 @@ func main() {
 	wsConn.SetMsgHdlr(modelMapper)
 	err = wsConn.ReadForever()
 	if err != nil {
-		panic(err)
+		if err == models.NotFoundError {
+			fmt.Println(err)
+
+		} else {
+			panic(err)
+		}
 	}
 }
 

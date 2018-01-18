@@ -16,8 +16,6 @@ import (
 
 const waitTimeout = 60 * time.Second
 
-var NotFoundError = errors.New("Can't find model")
-
 
 func getModelUid(modelName string) (uid uint64, err error) {
 	wsConn, err := ws_client.CreateConnection(modelName, false)
@@ -30,10 +28,6 @@ func getModelUid(modelName string) (uid uint64, err error) {
 	}
 	model, err := models.GetModelData(modelRaw)
 	if err != nil {
-		return
-	}
-	if !model.Exists {
-		err = NotFoundError
 		return
 	}
 	uid = model.Uid
@@ -72,8 +66,8 @@ func main() {
 	defer exitProgram(waitEnter)
 	modelUid, err := getModelUid(modelName)
 	if err != nil {
-		if err == NotFoundError {
-			fmt.Println("Can't find model")
+		if err == models.NotFoundError {
+			fmt.Println(err)
 			return
 		} else {
 			panic(err)
