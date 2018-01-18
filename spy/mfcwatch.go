@@ -12,6 +12,7 @@ import (
 
 	"gomfc/models"
 	"gomfc/ws_client"
+	"gomfc/rtmpdump"
 
 )
 
@@ -52,16 +53,24 @@ func (m *ModelMapType) SendState(state ModelState) (err error) {
 
 var ModelMap ModelMapType
 
-func stateHandle(stateChan chan ModelState, modelName string) {
+func stateHandle(modelName string) {
 Loop:
 	for {
 		select {
-		case state, ok := <- stateChan:
+		case state, ok := <- ModelMap.StateChan:
 			if !ok {
 				break Loop
 			}
 			if state.Nm == modelName {
-
+				for {
+					actualState, _ := ModelMap.Get(state.Uid)
+					if actualState.RecordEnable()  {
+						fmt.Printf("%q is available for record\n", modelName)
+						rtmpdump.Record(modelName, "")
+					} else {
+						break
+					}
+				}
 			}
 		}
 	}
@@ -140,7 +149,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	go stateHandle(ModelMap.StateChan, modelName)
+	go stateHandle(modelName)
 	wsConn.SetMsgHdlr(modelMapper)
 	err = wsConn.ReadForever()
 	if err != nil {

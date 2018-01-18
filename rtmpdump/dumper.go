@@ -176,7 +176,7 @@ func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsTo
 	for {
 		select {
 		case <- streamCloseChan:
-			fmt.Println("\nStream closed")
+			fmt.Println("\nstream closed")
 			return
 		case <- dataReceiveTicker.C:
 			if lastGet == dataSize {
