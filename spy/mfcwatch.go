@@ -62,14 +62,9 @@ Loop:
 				break Loop
 			}
 			if state.Nm == modelName {
-				for {
-					actualState, _ := ModelMap.Get(state.Uid)
-					if actualState.RecordEnable()  {
-						fmt.Printf("%q is available for record\n", modelName)
-						rtmpdump.Record(modelName, "")
-					} else {
-						break
-					}
+				if state.RecordEnable() {
+					fmt.Printf("%q is available for record\n", modelName)
+					rtmpdump.Record(modelName, "")
 				}
 			}
 		}
