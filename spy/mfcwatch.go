@@ -65,7 +65,6 @@ Loop:
 				for {
 					currentState, _ := ModelMap.Get(state.Uid)
 					if currentState.RecordEnable() {
-						fmt.Printf("%q is available for record\n", modelName)
 						rtmpdump.Record(modelName, "")
 					} else {
 						break
