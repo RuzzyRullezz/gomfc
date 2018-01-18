@@ -29,8 +29,9 @@ var StatusVerbose = map[uint64]string{
 	IsGroup:   "in group show",
 }
 
-var ServiceInfoError = errors.New("Get service information")
-var NotFoundError = errors.New("Not found")
+var ServiceInfoError = errors.New("got service information")
+var NotFoundError = errors.New("not found")
+var NoPublicStreams = errors.New("the model has no public streams")
 
 type MFCModel struct {
 	Lv int
