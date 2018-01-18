@@ -61,7 +61,7 @@ Loop:
 			if !ok {
 				break Loop
 			}
-			if state.Nm == modelName {
+			if strings.ToLower(state.Nm) == strings.ToLower(modelName) {
 				for {
 					currentState, _ := ModelMap.Get(state.Uid)
 					if currentState.RecordEnable() {
