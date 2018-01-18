@@ -30,9 +30,6 @@ const chanReadyTimeout = 60 * time.Second
 const dataReceiveTimeout = 30 * time.Second
 
 var jsRegexp = regexp.MustCompile(`\(function\(.+\)`)
-var streamReadyChan = make(chan struct{})
-var streamCloseChan = make(chan struct{})
-var dataSize int64
 
 type RtmpConn struct {
 	ServerUrl string
@@ -68,12 +65,15 @@ func RtmpUrlData(m *models.MFCModel) (rtmpConnData *RtmpConn) {
 type MfcRtmpHandler struct {
 	*flv.File
 	OutBountStreamChan chan rtmp.OutboundStream
+	dataSize int64
+	streamReadyChan chan struct{}
+	streamCloseChan chan struct{}
 }
 
 func (handler *MfcRtmpHandler) OnStatus(conn rtmp.OutboundConn) {}
 
 func (handler *MfcRtmpHandler) OnClosed(conn rtmp.Conn) {
-	streamCloseChan <- struct{}{}
+	handler.streamCloseChan <- struct{}{}
 }
 
 func (handler *MfcRtmpHandler) OnReceived(conn rtmp.Conn, message *rtmp.Message) {
@@ -107,19 +107,19 @@ func (handler *MfcRtmpHandler) OnReceived(conn rtmp.Conn, message *rtmp.Message)
 		}
 		msg := rtmp.NewMessage(rtmp.CS_ID_COMMAND, rtmp.COMMAND_AMF0, 0, 0, buf.Bytes())
 		conn.Send(msg)
-		streamReadyChan <- struct{}{}
+		handler.streamReadyChan <- struct{}{}
 	}
 	switch message.Type {
 	case rtmp.VIDEO_TYPE:
 		if handler.File != nil {
 			handler.WriteVideoTag(message.Buf.Bytes(), message.AbsoluteTimestamp)
 		}
-		dataSize += int64(message.Buf.Len())
+		handler.dataSize += int64(message.Buf.Len())
 	case rtmp.AUDIO_TYPE:
 		if handler.File != nil {
 			handler.WriteAudioTag(message.Buf.Bytes(), message.AbsoluteTimestamp)
 		}
-		dataSize += int64(message.Buf.Len())
+		handler.dataSize += int64(message.Buf.Len())
 	}
 }
 
@@ -129,7 +129,7 @@ func (handler *MfcRtmpHandler) OnStreamCreated(conn rtmp.OutboundConn, stream rt
 	handler.OutBountStreamChan <- stream
 }
 
-func waitForCreateStreamReady(timeout time.Duration) (err error) {
+func waitForCreateStreamReady(streamReadyChan chan struct{}, timeout time.Duration) (err error) {
 	select {
 	case _, ok := <-streamReadyChan:
 		if !ok {
@@ -146,6 +146,9 @@ func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsTo
 	mfcHandler := &MfcRtmpHandler{
 		File:flv,
 		OutBountStreamChan: createStreamChan,
+		dataSize: 0,
+		streamCloseChan: make(chan struct{}),
+		streamReadyChan: make(chan struct{}),
 	}
 	obConn, err := rtmp.Dial(serverUrl, mfcHandler, 100)
 	if err != nil {
@@ -156,7 +159,7 @@ func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsTo
 	if err != nil {
 		return
 	}
-	err = waitForCreateStreamReady(chanReadyTimeout)
+	err = waitForCreateStreamReady(mfcHandler.streamReadyChan, chanReadyTimeout)
 	if err != nil {
 		return
 	}
@@ -175,17 +178,17 @@ func RecordStream(serverUrl string, roomId, modelId int64, playPath string, wsTo
 	everySecond := time.NewTicker(time.Second)
 	for {
 		select {
-		case <- streamCloseChan:
+		case <- mfcHandler.streamCloseChan:
 			fmt.Println("\nstream closed")
 			return
 		case <- dataReceiveTicker.C:
-			if lastGet == dataSize {
+			if lastGet == mfcHandler.dataSize {
 				fmt.Println("\nNo data anymore, stream close")
 				return
 			}
-			lastGet = dataSize
+			lastGet = mfcHandler.dataSize
 		case <- everySecond.C:
-			fmt.Printf("\rFile size: %.2f MB (%d)", float32(dataSize)/1024/1024, dataSize)
+			fmt.Printf("\rFile size: %.2f MB (%d)", float32(mfcHandler.dataSize)/1024/1024, mfcHandler.dataSize)
 		}
 	}
 }
