@@ -65,7 +65,10 @@ Loop:
 				for {
 					currentState, _ := ModelMap.Get(state.Uid)
 					if currentState.RecordEnable() {
-						rtmpdump.Record(modelName, "")
+						err := rtmpdump.Record(modelName, "")
+						if err != nil {
+							fmt.Println(err)
+						}
 					} else {
 						break
 					}
