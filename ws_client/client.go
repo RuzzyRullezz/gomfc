@@ -7,6 +7,7 @@ import (
 
 	"math/rand"
 	"net/http"
+	"crypto/tls"
 	"net/url"
 
 	"io/ioutil"
@@ -76,7 +77,11 @@ func getWSServer() (server string, err error) {
 	type CfgResp struct {
 		Websocket_Servers map[string]string
 	}
-	resp, err := http.Get(serverCfgUrl)
+	transCfg := &http.Transport{
+        	TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // disable verify
+    	}
+	client := &http.Client{Transport: transCfg}
+	resp, err := client.Get(serverCfgUrl)
 	if err != nil {
 		return
 	}
